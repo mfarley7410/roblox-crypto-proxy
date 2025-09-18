@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const cheerio = require("cheerio");
 const cors = require("cors");
 
 const app = express();
@@ -7,45 +8,45 @@ app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 
+// List of experience URLs to scrape
+const games = {
+  "Garden Tower Defense": "https://www.roblox.com/games/108533757090220/Garden-Tower-Defense",
+  "Blox Fruits": "https://www.roblox.com/games/873760244/Blox-Fruits",
+  "Brookhaven 🏡RP": "https://www.roblox.com/games/492492222/Brookhaven-RP",
+  "Pet Simulator 99": "https://www.roblox.com/games/1550233904/Pet-Simulator-99"
+};
+
 app.get("/market", async (req, res) => {
-  try {
-    const exploreUrl = "https://apis.roblox.com/explore-api/v1/get-sorts?device=computer&country=us&sessionId=123456";
+  const result = {};
 
-    const exploreRes = await axios.get(exploreUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
-      }
-    });
+  for (const [name, url] of Object.entries(games)) {
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0"
+        }
+      });
 
-    const sorts = exploreRes.data.sorts || [];
-    const popularSort = sorts.find(s => s.name === "Popular");
+      const $ = cheerio.load(response.data);
+      const activeText = $("p.text-lead.font-caption-body").first().text().replace(/,/g, "");
+      const activeCount = parseInt(activeText) || 0;
 
-    if (!popularSort || !popularSort.games) {
-      return res.status(500).json({ error: "No popular games found." });
-    }
-
-    const topGames = popularSort.games.slice(0, 10);
-    const universeIds = topGames.map(g => g.universeId).join(",");
-
-    const gameUrl = `https://games.roblox.com/v1/games?universeIds=${universeIds}`;
-    const gameRes = await axios.get(gameUrl);
-
-    const result = {};
-    for (const game of gameRes.data.data) {
-      result[game.name] = {
-        Price: game.playing || 0,
-        Visits: game.visits || 0
+      result[name] = {
+        Price: activeCount,
+        Visits: null
+      };
+    } catch (err) {
+      console.error(`Error scraping ${name}:`, err.message);
+      result[name] = {
+        Price: 0,
+        Visits: null
       };
     }
-
-    res.json(result);
-  } catch (err) {
-    console.error("Error fetching market data:", err.message);
-    res.status(500).json({ error: "Failed to fetch market data." });
   }
+
+  res.json(result);
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Roblox Crypto Market Proxy running safely on port ${PORT}`);
+  console.log(`✅ Roblox Game Scraper running on port ${PORT}`);
 });
