@@ -7,7 +7,7 @@ app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 
-// Top Roblox experiences by universe ID
+// ✅ These are universe IDs for top Roblox games
 const universeIds = [
   920587237,     // Adopt Me
   492492222,     // Brookhaven
@@ -21,17 +21,21 @@ const universeIds = [
 ];
 
 app.get("/market", async (req, res) => {
-  const url = "https://games.roblox.com/v1/games?universeIds=" + universeIds.join(",");
+  const url = `https://games.roblox.com/v1/games?universeIds=${universeIds.join(",")}`;
 
   try {
     const response = await axios.get(url);
     const result = {};
 
-    for (const game of response.data.data) {
-      result[game.name] = {
-        Price: game.playing || 0,
-        Visits: game.visits || 0
-      };
+    if (response.data && Array.isArray(response.data.data)) {
+      for (const game of response.data.data) {
+        result[game.name] = {
+          Price: game.playing || 0,
+          Visits: game.visits || 0
+        };
+      }
+    } else {
+      console.warn("Unexpected response format:", response.data);
     }
 
     res.json(result);
@@ -42,5 +46,5 @@ app.get("/market", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Roblox Crypto Market Proxy running on port ${PORT}`);
+  console.log(`✅ Roblox Crypto Market Proxy running on port ${PORT}`);
 });
