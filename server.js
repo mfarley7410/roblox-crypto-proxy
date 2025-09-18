@@ -10,7 +10,13 @@ const PORT = process.env.PORT || 3000;
 app.get("/market", async (req, res) => {
   try {
     const exploreUrl = "https://apis.roblox.com/explore-api/v1/get-sorts?device=computer&country=us";
-    const exploreRes = await axios.get(exploreUrl);
+
+    const exploreRes = await axios.get(exploreUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+      }
+    });
 
     const sorts = exploreRes.data.sorts || [];
     const popularSort = sorts.find(s => s.name === "Popular");
