@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 app.get("/market", async (req, res) => {
   try {
-    const exploreUrl = "https://apis.roblox.com/explore-api/v1/get-sorts?device=computer&country=us";
+    const exploreUrl = "https://apis.roblox.com/explore-api/v1/get-sorts?device=computer&country=us&sessionId=123456";
 
     const exploreRes = await axios.get(exploreUrl, {
       headers: {
