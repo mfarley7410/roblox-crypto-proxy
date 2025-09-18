@@ -7,35 +7,30 @@ app.use(cors());
 
 const PORT = process.env.PORT || 3000;
 
-// ✅ These are universe IDs for top Roblox games
-const universeIds = [
-  920587237,     // Adopt Me
-  492492222,     // Brookhaven
-  873760244,     // Blox Fruits
-  1550233904,    // Pet Simulator 99
-  735030788,     // Royale High
-  142823291,     // Murder Mystery 2
-  1962086868,    // Tower of Hell
-  6516141723,    // Doors
-  1119586518     // Arsenal
-];
-
 app.get("/market", async (req, res) => {
-  const url = `https://games.roblox.com/v1/games?universeIds=${universeIds.join(",")}`;
-
   try {
-    const response = await axios.get(url);
-    const result = {};
+    const exploreUrl = "https://apis.roblox.com/explore-api/v1/get-sorts?device=computer&country=us";
+    const exploreRes = await axios.get(exploreUrl);
 
-    if (response.data && Array.isArray(response.data.data)) {
-      for (const game of response.data.data) {
-        result[game.name] = {
-          Price: game.playing || 0,
-          Visits: game.visits || 0
-        };
-      }
-    } else {
-      console.warn("Unexpected response format:", response.data);
+    const sorts = exploreRes.data.sorts || [];
+    const popularSort = sorts.find(s => s.name === "Popular");
+
+    if (!popularSort || !popularSort.games) {
+      return res.status(500).json({ error: "No popular games found." });
+    }
+
+    const topGames = popularSort.games.slice(0, 10);
+    const universeIds = topGames.map(g => g.universeId).join(",");
+
+    const gameUrl = `https://games.roblox.com/v1/games?universeIds=${universeIds}`;
+    const gameRes = await axios.get(gameUrl);
+
+    const result = {};
+    for (const game of gameRes.data.data) {
+      result[game.name] = {
+        Price: game.playing || 0,
+        Visits: game.visits || 0
+      };
     }
 
     res.json(result);
@@ -46,5 +41,5 @@ app.get("/market", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Roblox Crypto Market Proxy running on port ${PORT}`);
+  console.log(`✅ Roblox Crypto Market Proxy running safely on port ${PORT}`);
 });
